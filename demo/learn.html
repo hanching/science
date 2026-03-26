@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>蔬菜生長與構造互動百科 v0.1</title>
+    <style>
+        :root {
+            --primary-green: #2e7d32;
+            --soil-brown: #5d4037;
+            --leaf-green: #81c784;
+            --bg-color: #f1f8e9;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: #cbd5e0;
+        }
+
+        /* 互動視窗容器 */
+        #viewport {
+            width: 100vw;
+            height: 100vh;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+        }
+
+        #viewport:active {
+            cursor: grabbing;
+        }
+
+        /* 內容面板 */
+        #content-wrapper {
+            width: 90%;
+            max-width: 900px;
+            background: white;
+            padding: 50px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            transform-origin: center;
+            transition: transform 0.05s linear;
+            user-select: none;
+        }
+
+        h1 { 
+            color: var(--primary-green); 
+            text-align: center; 
+            border-bottom: 4px solid var(--leaf-green); 
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .grid-container { grid-template-columns: 1fr; }
+        }
+
+        .section {
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 6px solid var(--primary-green);
+        }
+
+        h2 { color: var(--soil-brown); font-size: 1.2em; margin-top: 0; }
+        
+        ul { padding-left: 20px; margin: 10px 0; }
+        li { margin-bottom: 6px; font-size: 0.95em; color: #333; }
+
+        .highlight { font-weight: bold; color: var(--primary-green); }
+
+        /* 懸浮提示軌跡 */
+        #ui-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.8);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            pointer-events: none;
+            border: 1px solid #ccc;
+            z-index: 1000;
+        }
+
+        .version-tag {
+            text-align: right;
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui-overlay">
+    💻 滾輪: 縮放 | 左鍵: 拖曳<br>
+    📱 雙指: 縮放 | 單指: 拖曳
+</div>
+
+<div id="viewport">
+    <div id="content-wrapper">
+        <h1>蔬菜生長與植物構造互動百科</h1>
+
+        <div class="grid-container">
+            <div class="section">
+                <h2>1. 蔬菜生長需求與觀察</h2>
+                <ul>
+                    <li><span class="highlight">要素：</span> 陽光、空氣、水、土壤。</li>
+                    <li><span class="highlight">觀察點：</span> 種子發芽所需的濕度與環境溫度變化。</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>2. 形態與構造</h2>
+                <ul>
+                    <li><span class="highlight">根：</span> 軸根（主根明顯）、鬚根（叢生狀）。</li>
+                    <li><span class="highlight">莖：</span> 草本莖（柔軟綠色）。</li>
+                    <li><span class="highlight">葉：</span> 葉脈（網狀/平行）、葉序（對生/互生）。</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>3. 環境影響與反應</h2>
+                <ul>
+                    <li><span class="highlight">向光性：</span> 植物幼莖會朝向光源生長以獲取能量。</li>
+                    <li><span class="highlight">缺水反應：</span> 葉片氣孔關閉、組織垂軟以減少蒸散。</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>4. 量化記錄與測量</h2>
+                <ul>
+                    <li><span class="highlight">工具：</span> 直尺、電子秤。</li>
+                    <li><span class="highlight">數據：</span> 每日株高紀錄、葉片數量統計、重量變化。</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>5. 光合作用實驗</h2>
+                <p>比較「照光組」與「遮光組」：</p>
+                <ul>
+                    <li>陽光是植物製造養分的動力來源。</li>
+                    <li>缺乏陽光會導致植物黃化、生長遲緩。</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>6. 經濟動植物與栽培</h2>
+                <p>結合社區與校園：</p>
+                <ul>
+                    <li>學習有機栽培與病蟲害物理防治。</li>
+                    <li>實踐「從土地到餐桌」的永續學習。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="version-tag">Document Version: v0.1</div>
+    </div>
+</div>
+
+<script>
+    const viewport = document.getElementById('viewport');
+    const content = document.getElementById('content-wrapper');
+
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let startX, startY;
+
+    // --- 縮放限制 ---
+    const MIN_SCALE = 0.3;
+    const MAX_SCALE = 4;
+
+    // --- 電腦端：滾輪縮放 ---
+    viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY * -0.001;
+        const newScale = Math.min(Math.max(MIN_SCALE, scale + delta), MAX_SCALE);
+        scale = newScale;
+        updateTransform();
+    }, { passive: false });
+
+    // --- 電腦端：滑鼠拖曳 ---
+    viewport.addEventListener('mousedown', (e) => {
+        if(e.button !== 0) return; // 僅限左鍵
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    // --- 行動端：觸控互動 ---
+    let initialDist = 0;
+    let initialScale = 1;
+
+    viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - translateX;
+            startY = e.touches[0].clientY - translateY;
+        } else if (e.touches.length === 2) {
+            isDragging = false;
+            initialDist = getDistance(e.touches);
+            initialScale = scale;
+        }
+    });
+
+    viewport.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (e.touches.length === 1 && isDragging) {
+            translateX = e.touches[0].clientX - startX;
+            translateY = e.touches[0].clientY - startY;
+        } else if (e.touches.length === 2) {
+            const currentDist = getDistance(e.touches);
+            const pinchScale = currentDist / initialDist;
+            scale = Math.min(Math.max(MIN_SCALE, initialScale * pinchScale), MAX_SCALE);
+        }
+        updateTransform();
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', () => { isDragging = false; });
+
+    function getDistance(touches) {
+        return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+    }
+
+    function updateTransform() {
+        content.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    }
+</script>
+
+</body>
+</html>
