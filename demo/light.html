@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>光照度實驗量測工具 v0.1</title>
+    <style>
+        :root {
+            --primary-blue: #0288d1;
+            --accent-orange: #f57c00;
+            --bg-gray: #eceff1;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: #cfd8dc;
+        }
+
+        /* 視窗容器 */
+        #viewport {
+            width: 100vw;
+            height: 100vh;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+        }
+
+        #viewport:active { cursor: grabbing; }
+
+        /* 主面板 */
+        #content-wrapper {
+            width: 90%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transform-origin: center;
+            transition: transform 0.05s linear;
+        }
+
+        h1 { color: var(--primary-blue); text-align: center; margin-bottom: 20px; font-size: 1.5rem; }
+
+        /* 測量數值顯示 */
+        .meter-box {
+            background: #263238;
+            color: #00e676;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .lux-value { font-size: 4rem; font-family: monospace; font-weight: bold; }
+        .lux-unit { font-size: 1.2rem; margin-left: 5px; color: #aaa; }
+        .offset-info { font-size: 0.8rem; color: #81d4fa; margin-top: 5px; }
+
+        /* 按鈕群組 */
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            font-weight: bold;
+        }
+        .btn-calibrate { background: var(--accent-orange); color: white; }
+        .btn-save { background: var(--primary-blue); color: white; }
+        .btn-delete { background: #d32f2f; color: white; grid-column: span 2; }
+        button:active { opacity: 0.7; }
+
+        /* 紀錄列表 */
+        .record-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #eee;
+            font-size: 0.9rem;
+        }
+
+        #ui-hint {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui-hint">滾輪/雙指縮放，左鍵/單指拖曳</div>
+
+<div id="viewport">
+    <div id="content-wrapper">
+        <h1>光照度量測與記錄</h1>
+
+        <div class="meter-box">
+            <div id="display" class="lux-value">0</div>
+            <span class="lux-unit">Lux</span>
+            <div id="offset-display" class="offset-info">校正值: 0 Lux</div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-calibrate" onclick="calibrate()">數值校正(歸零)</button>
+            <button class="btn-save" onclick="saveData()">儲存當前數值</button>
+            <button class="btn-delete" onclick="clearData()">刪除所有資料</button>
+        </div>
+
+        <h3>歷史紀錄 (本機暫存)</h3>
+        <div id="record-container" class="record-list">
+            </div>
+
+        <div style="text-align:right; font-size:10px; color:#999; margin-top:15px;">Version: v0.1</div>
+    </div>
+</div>
+
+<script>
+    let currentLux = 0;
+    let offset = 0;
+    let records = JSON.parse(localStorage.getItem('lux_records')) || [];
+
+    // --- 模擬感測器數據 (若瀏覽器不支援硬體 API 則進入模擬模式) ---
+    function startLighSensor() {
+        if ('AmbientLightSensor' in window) {
+            try {
+                const sensor = new AmbientLightSensor();
+                sensor.addEventListener('reading', () => {
+                    updateLux(sensor.illuminance);
+                });
+                sensor.start();
+            } catch (err) {
+                console.warn("感測器啟動失敗，切換至環境模擬模式");
+                simulateSensor();
+            }
+        } else {
+            simulateSensor();
+        }
+    }
+
+    function simulateSensor() {
+        setInterval(() => {
+            // 模擬數值隨機微幅跳動
+            const base = 300; 
+            const noise = Math.random() * 20;
+            updateLux(base + noise);
+        }, 500);
+    }
+
+    function updateLux(val) {
+        currentLux = Math.round(val);
+        document.getElementById('display').innerText = Math.max(0, currentLux - offset);
+    }
+
+    // --- 功能邏輯 ---
+    function calibrate() {
+        offset = currentLux;
+        document.getElementById('offset-display').innerText = `校正值: ${offset} Lux`;
+        alert("已將當前光度設為基準(0)");
+    }
+
+    function saveData() {
+        const finalVal = Math.max(0, currentLux - offset);
+        const now = new Date();
+        const timeStr = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+        const newRecord = { time: timeStr, value: finalVal };
+        
+        records.unshift(newRecord);
+        localStorage.setItem('lux_records', JSON.stringify(records));
+        renderRecords();
+    }
+
+    function clearData() {
+        if(confirm("確定要刪除所有本機暫存紀錄嗎？")) {
+            records = [];
+            localStorage.removeItem('lux_records');
+            renderRecords();
+        }
+    }
+
+    function renderRecords() {
+        const container = document.getElementById('record-container');
+        container.innerHTML = records.map(r => `
+            <div class="record-item">
+                <span>🕒 ${r.time}</span>
+                <span style="color:var(--primary-blue); font-weight:bold;">${r.value} Lux</span>
+            </div>
+        `).join('');
+    }
+
+    // --- 畫布互動邏輯 (縮放與拖曳) ---
+    const viewport = document.getElementById('viewport');
+    const content = document.getElementById('content-wrapper');
+    let scale = 1, tx = 0, ty = 0, isDragging = false, startX, startY;
+
+    viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        scale = Math.min(Math.max(0.4, scale + e.deltaY * -0.001), 3);
+        updateTransform();
+    }, { passive: false });
+
+    viewport.addEventListener('mousedown', (e) => {
+        if(e.button !== 0) return;
+        isDragging = true;
+        startX = e.clientX - tx; startY = e.clientY - ty;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        tx = e.clientX - startX; ty = e.clientY - startY;
+        updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => isDragging = false);
+
+    // 行動端觸控
+    let initDist = 0, initScale = 1;
+    viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - tx; startY = e.touches[0].clientY - ty;
+        } else if (e.touches.length === 2) {
+            initDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            initScale = scale;
+        }
+    });
+
+    viewport.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (e.touches.length === 1 && isDragging) {
+            tx = e.touches[0].clientX - startX; ty = e.touches[0].clientY - startY;
+        } else if (e.touches.length === 2) {
+            const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            scale = Math.min(Math.max(0.4, initScale * (dist / initDist)), 3);
+        }
+        updateTransform();
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', () => isDragging = false);
+
+    function updateTransform() {
+        content.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    }
+
+    // 初始化
+    renderRecords();
+    startLighSensor();
+</script>
+
+</body>
+</html>
