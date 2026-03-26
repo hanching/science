@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小黃瓜互動百科 v0.1</title>
+    <style>
+        :root {
+            --primary-green: #2d5a27;
+            --light-green: #e8f5e9;
+            --accent-yellow: #fff176;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        /* 畫布容器：負責處理拖曳與縮放 */
+        #viewport {
+            width: 100vw;
+            height: 100vh;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none; /* 禁用瀏覽器預設手勢以利 JS 控制 */
+        }
+
+        #viewport:active {
+            cursor: grabbing;
+        }
+
+        /* 內容容器 */
+        #content-wrapper {
+            width: 90%;
+            max-width: 800px;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform-origin: center;
+            transition: transform 0.1s ease-out;
+            user-select: none;
+        }
+
+        h1 { color: var(--primary-green); text-align: center; border-bottom: 3px solid var(--primary-green); padding-bottom: 10px; }
+        h2 { color: #388e3c; margin-top: 30px; display: flex; align-items: center; }
+        h2::before { content: '🥒'; margin-right: 10px; }
+        
+        .section { margin-bottom: 25px; line-height: 1.6; color: #333; }
+        .card { background: var(--light-green); padding: 15px; border-radius: 10px; margin-top: 10px; }
+        
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+
+        .footer { text-align: center; font-size: 12px; color: #888; margin-top: 40px; }
+
+        /* 操作提示 */
+        #controls-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<div id="controls-hint">電腦：滾輪縮放、左鍵拖曳 | 手機：雙指縮放、單指拖曳</div>
+
+<div id="viewport">
+    <div id="content-wrapper">
+        <h1>小黃瓜互動百科 <small style="font-size: 0.5em; color: #666;">v0.1</small></h1>
+
+        <div class="section">
+            <h2>小黃瓜介紹</h2>
+            <p>小黃瓜（Cucumis sativus）是葫蘆科甜瓜屬的一年生攀援草本植物。它含有豐富的水分、維生素 C 與纖維質，是夏季清熱解暑的最佳蔬菜。</p>
+        </div>
+
+        <div class="section">
+            <h2>種植注意事項</h2>
+            <div class="card">
+                <ul>
+                    <li><strong>充足日照：</strong> 每日需至少 6-8 小時陽光。</li>
+                    <li><strong>水分管理：</strong> 喜濕但不耐澇，保持土壤濕潤即可。</li>
+                    <li><strong>搭架支撐：</strong> 攀緣作物，需設置棚架供其向上生長，增加通風。</li>
+                    <li><strong>適時施肥：</strong> 以磷鉀肥為主，促進果實發育。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>病蟲害及防治</h2>
+            <div class="card" style="border-left: 5px solid #d32f2f;">
+                <strong>常見害蟲：</strong> 蚜蟲、紅蜘蛛。<br>
+                <em>防治：</em> 使用稀釋苦楝油或物理黏板。<br><br>
+                <strong>常見病害：</strong> 白粉病、露菌病。<br>
+                <em>防治：</em> 保持通風，避免葉片積水，受感染葉片需立即摘除。
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>美味料理建議</h2>
+            <div class="card" style="background: #fffde7;">
+                <ul>
+                    <li><strong>涼拌小黃瓜：</strong> 拍碎後加入蒜末、醋、糖與香油。</li>
+                    <li><strong>小黃瓜炒雞丁：</strong> 爽脆口感能中和肉類油膩。</li>
+                    <li><strong>蜂蜜胡瓜汁：</strong> 與蜂蜜、檸檬打汁，消暑聖品。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">版本編號：v0.1 | 支援電腦與行動裝置互動</div>
+    </div>
+</div>
+
+<script>
+    const viewport = document.getElementById('viewport');
+    const content = document.getElementById('content-wrapper');
+
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let startX, startY;
+
+    // --- 電腦端：滾輪縮放 ---
+    viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY * -0.001;
+        scale = Math.min(Math.max(0.5, scale + delta), 3);
+        updateTransform();
+    }, { passive: false });
+
+    // --- 電腦端：滑鼠拖曳 ---
+    viewport.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    // --- 行動端：觸控拖曳與雙指縮放 ---
+    let initialDistance = 0;
+    let initialScale = 1;
+
+    viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - translateX;
+            startY = e.touches[0].clientY - translateY;
+        } else if (e.touches.length === 2) {
+            initialDistance = getDistance(e.touches);
+            initialScale = scale;
+        }
+    });
+
+    viewport.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (e.touches.length === 1 && isDragging) {
+            translateX = e.touches[0].clientX - startX;
+            translateY = e.touches[0].clientY - startY;
+        } else if (e.touches.length === 2) {
+            const currentDistance = getDistance(e.touches);
+            const pinchScale = currentDistance / initialDistance;
+            scale = Math.min(Math.max(0.5, initialScale * pinchScale), 3);
+        }
+        updateTransform();
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    function getDistance(touches) {
+        return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+    }
+
+    function updateTransform() {
+        content.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    }
+</script>
+
+</body>
+</html>
